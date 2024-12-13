@@ -8,23 +8,22 @@ import datetime
 import sys
 import subprocess
 import tools.volumelimiter as volumelimiter
-import re
+import google.generativeai as genai
+import configparser
 
 
-
-import cohere
+genai.configure(api_key="AIzaSyCJeZoWbIW1ClLa7AtIoiWO_EEuPSMaO_4")
 
 an = datetime.datetime.now()
 hour = datetime.datetime.strftime(an, '%X')
 
 vol_file_path = "./Settings/music.txt"
-output_path = "./Settings/output.mp3"
-listening_path = "./Settings/listening.mp3"
+output_path = "./Sound/output.mp3"
 değer = 10
+config_path = "./Settings/config.ini"
 
-co = cohere.ClientV2("edrULXSCYa86OYqBM1NKKmmBfgqyFwrHvVFrQ94r")
-
-
+config = configparser.ConfigParser()
+config.read(config_path)
 
 def play_audio(file_path):
     pygame.mixer.init()
@@ -37,51 +36,34 @@ def delete_audio():
         os.remove(output_path)
     print("Ses dosyası temizlendi.")
 def vol_read():
-    with open(vol_file_path, "r+") as file:
-        return file.read().strip()
+    return int(config['Settings']["volume"])  
 def vol_write(limiter):
-    with open(vol_file_path, "w+") as file:
-        file.write(str(limiter))
-
-def process_user_question(user_question):
-    question_endings = {
-        "mı",
-        "mi",
-        "mu",
-        "mü",
-        "mısın",
-        "misin",
-        "musun",
-        "müsün",
-        "mıdır",
-        "midir",
-        "mudur",
-        "müdür",
-        "mıydı",
-        "miydi",
-        "muydu",
-        "müydü",
-        "nedir"
-    }
-
-    for ending in question_endings:
-        if user_question.endswith(ending):
-            base_question = user_question.replace(ending, "").strip()
-            print(f"Sorulan: {base_question}")
-            
-            response = co.chat(
-                model="command-r-plus",
-                messages=[{"role": "user", "content": base_question}]
-            )
-
-            if response and response.message and response.message.content:
-                for content_item in response.message.content:
-                    if content_item.type == 'text':
-                        return content_item.text
-    return "Üzgünüm, anlayamadım."
-
+    config["Settings"]["volume"] = str(limiter)  
+    with open(config_path, "w") as configfile:  
+        config.write(configfile)
 def update_volume(vol):
     volumelimiter.update_volume(vol)
+
+def Ai_value():
+    global ai
+    ai = config['Settings']["Ai"]
+    
+
+vol = vol_read()
+Ai_value()
+print(ai)
+
+def process_user_question(user_question):
+    print(ai)
+    try:
+        model = genai.GenerativeModel(ai)
+        response = model.generate_content(user_question)
+        return response.text
+    except Exception as e:
+        print(f"Hata oluştu: {e}")
+        return "Üzgünüm, bir hata oluştu."
+
+
 
 def handle_volume_commands(user_command):
     global vol
@@ -121,12 +103,14 @@ def handle_volume_commands(user_command):
         text = f"{song_name} adlı şarkıyı açıyorum"
         pywhatkit.playonyt(song_name) 
     
+    
     return text
 
 def assistant_listen_and_execute(keyword="hey kılıç", language='tr'):
     global vol
     recognizer = sr.Recognizer()
     microphone = sr.Microphone()
+
     os.system("cls")
     print(f"Program çalışıyor. Tetikleme kelimesi: '{keyword}'. Çıkmak için Ctrl+C yapabilirsiniz.")
 
@@ -174,6 +158,8 @@ def assistant_listen_and_execute(keyword="hey kılıç", language='tr'):
         print("\nÇıkış yapılıyor...")
     except Exception as e:
         print(f"Hata oluştu: {e}")
+
+
 
 if __name__ == "__main__":
     delete_audio()
