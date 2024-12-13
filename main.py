@@ -7,9 +7,12 @@ import pywhatkit
 import datetime
 import sys
 import subprocess
+import configparser
+
+
+
 import tools.volumelimiter as volumelimiter
 import google.generativeai as genai
-import configparser
 
 
 genai.configure(api_key="AIzaSyCJeZoWbIW1ClLa7AtIoiWO_EEuPSMaO_4")
@@ -19,11 +22,15 @@ hour = datetime.datetime.strftime(an, '%X')
 
 vol_file_path = "./Settings/music.txt"
 output_path = "./Sound/output.mp3"
-değer = 10
 config_path = "./Settings/config.ini"
+backup_path = "./Settings/backuptext"
 
+
+değer = 10
 config = configparser.ConfigParser()
 config.read(config_path)
+
+pygame.mixer.init()
 
 def play_audio(file_path):
     pygame.mixer.init()
@@ -31,16 +38,26 @@ def play_audio(file_path):
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
         time.sleep(0.1)
+    pygame.mixer.music.stop()  
+    pygame.mixer.quit()  
+
 def delete_audio():
-    if os.path.exists(output_path):
-        os.remove(output_path)
-    print("Ses dosyası temizlendi.")
+    for _ in range(5):  
+        try:
+            if os.path.exists(output_path):
+                os.remove(output_path)
+                print("Ses dosyası temizlendi.")
+            return
+        except PermissionError:
+            print("Dosya kullanımda, yeniden denenecek...")
+            time.sleep(0.5) 
+    print("Ses dosyası silinemedi, işlem devam ediyor.")
+
+
 def vol_read():
     return int(config['Settings']["volume"])  
 def vol_write(limiter):
     config["Settings"]["volume"] = str(limiter)  
-    with open(config_path, "w") as configfile:  
-        config.write(configfile)
 def update_volume(vol):
     volumelimiter.update_volume(vol)
 
@@ -52,12 +69,18 @@ def Ai_value():
 vol = vol_read()
 Ai_value()
 print(ai)
+question_cache = {}
 
 def process_user_question(user_question):
-    print(ai)
+    if user_question in question_cache:
+        return question_cache[user_question]
+    with open(backup_path, "a",encoding="utf-8") as backup:
+        backup.write(user_question + "\n")
+    
     try:
         model = genai.GenerativeModel(ai)
         response = model.generate_content(user_question)
+        question_cache[user_question] = response.text  
         return response.text
     except Exception as e:
         print(f"Hata oluştu: {e}")
@@ -144,8 +167,6 @@ def assistant_listen_and_execute(keyword="hey kılıç", language='tr'):
                             tts.save(output_path)
                             play_audio(output_path)
 
-                            os.execv(sys.executable, ['python'] + sys.argv)
-
                         except sr.UnknownValueError:
                             print("Kullanıcı komutunu anlayamadım, lütfen tekrar edin.")
                         except sr.RequestError as e:
@@ -158,7 +179,6 @@ def assistant_listen_and_execute(keyword="hey kılıç", language='tr'):
         print("\nÇıkış yapılıyor...")
     except Exception as e:
         print(f"Hata oluştu: {e}")
-
 
 
 if __name__ == "__main__":
