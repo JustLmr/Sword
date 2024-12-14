@@ -3,9 +3,17 @@ from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 import comtypes
 from ctypes import cast, POINTER
 import time
+import configparser
+
 
 global volume_value
 volume_value = 100
+config_path = "./Settings/config.ini"
+
+config = configparser.ConfigParser()
+config.read(config_path)
+app_name = config["Settings"]["browser"]
+
 
 def get_application_audio_session(app_name):
     sessions = AudioUtilities.GetAllSessions()
@@ -34,6 +42,9 @@ def update_volume(value):
     Global ses seviyesini güncelle ve uygulamanın ses seviyesini ayarla.
     """
     global volume_value
-    volume_value = value  
+    volume_value = value
+    print(app_name)  
     print(f"Ses seviyesi güncellendi: {volume_value}")
-    set_application_volume('brave.exe', volume_value)
+    set_application_volume(app_name, volume_value)
+
+update_volume(100)
