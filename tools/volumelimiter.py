@@ -46,5 +46,3 @@ def update_volume(value):
     print(app_name)  
     print(f"Ses seviyesi güncellendi: {volume_value}")
     set_application_volume(app_name, volume_value)
-
-update_volume(100)

@@ -1,13 +1,13 @@
 # To Do 
 Kullanıcı için ui ve ux tasarlanacak:
--> Ui-Ux,Backend için pyqt5 kullanılacak(Kısmen Yapıldı)
+-> ui üzerinden alınan input verisi ile kullanıcın isimlendirdiği playlisti sesli olarak
+oynatacak
 -> Kullanıcı tetikleyici(Hey Kılıç) tarzını değiştirebilecek
--> Playlist entegrasyonu kullanıcı giriş yapacak ve playlistlere bakabilecek(Spotify ve Youtube.music için)
+-> Kullanıcı favori şarkıları için bu şarkıyı favoriye kaydet diyecek
 
 Zamanlayıcı
 -> Zamanlanınca uygulama Açma
 -> Odaklanma modu
--> Kopyalanan veriyi not alacak
 
 
 Oyun modları eklenecek 
@@ -28,3 +28,12 @@ Oyun modları eklenecek
 
 
 -Kullanıcı gemini için hangi modeli kullanacağı hakkında bilgi kısmı olacak ve seçebilecek
+-Kullanıcı kullandığı browseri seçebiliyor artık ui üzerinden 
+
+
+
+
+
+# Partially Made
+-Kullanıcı tarafından girilen inputlarla resim oluşturma eklendi ancak ödeme hesabı lazım
+>Ödeme Sistemleri Halledildikten sonra kullanıcı ile entegreli şekilde sesli asistana eklenecektir
