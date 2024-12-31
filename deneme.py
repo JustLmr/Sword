@@ -9,12 +9,17 @@ import sys
 import subprocess
 import configparser
 import pyperclip
-
+# import timer
 
 import tools.volumelimiter as volumelimiter
 import google.generativeai as genai
 from deep_translator import GoogleTranslator
 import speech_recognition as sr
+from elevenlabs import Voice, VoiceSettings, play
+from elevenlabs.client import ElevenLabs
+
+
+
 import requests
 
 genai.configure(api_key="AIzaSyCJeZoWbIW1ClLa7AtIoiWO_EEuPSMaO_4")
@@ -23,6 +28,9 @@ an = datetime.datetime.now()
 hour = datetime.datetime.strftime(an, '%X')
 
 config = configparser.ConfigParser()
+client = ElevenLabs(
+  api_key="sk_cbcb63d7a0bc8aef35b5a2f95ccdb156bf1ec24e47b57652", 
+)
 
 
 
@@ -76,14 +84,30 @@ def update_volume(vol):
     volumelimiter.update_volume(vol)
 
 def Ai_value():
-    global ai
+    global ai, choose_voice_id
     ai = config['Settings']["Ai"]
+    choose_voice_id = config['Settings']["voice_id"]
     
 
 vol = vol_read()
 Ai_value()
 print(ai)
 question_cache = {}
+
+def process_user_question(user_question):
+    if user_question in question_cache:
+        return question_cache[user_question]
+    with open(backup_path, "a",encoding="utf-8") as backup:
+        backup.write(user_question + "\n")
+    
+    try:
+        model = genai.GenerativeModel(ai)
+        response = model.generate_content(user_question)
+        question_cache[user_question] = response.text  
+        return response.text
+    except Exception as e:
+        print(f"Hata oluştu: {e}")
+        return "Üzgünüm, bir hata oluştu."
 
 def translate_text(text, target_language='en'):
     try:
@@ -97,7 +121,7 @@ def create_img(prompt):
         response = requests.post(
             f"https://api.stability.ai/v2beta/stable-image/generate/sd3",
             headers={
-                "authorization": f"Bearer sk-ZZnyli5npU1I8a3QvrsOAV66jWDzFbkd95XNwv4vW1iKgEno",
+                "authorization": f"Bearer sk-WcXhrXDl2vacXZ4pnQX7VCqjI4t80zSeHTlygB4R7V4Ct22E",
                 "accept": "image/*"
             },
             files={"none": ''},
@@ -119,20 +143,77 @@ def create_img(prompt):
 
 
 
-def process_user_question(user_question):
-    if user_question in question_cache:
-        return question_cache[user_question]
-    with open(backup_path, "a",encoding="utf-8") as backup:
-        backup.write(user_question + "\n")
+
+
+def recipe_for_food():
+    print("Merhaba! Yemek tariflerinde size yardımcı olabilirim.")
     
-    try:
-        model = genai.GenerativeModel(ai)
-        response = model.generate_content(user_question)
-        question_cache[user_question] = response.text  
-        return response.text
-    except Exception as e:
-        print(f"Hata oluştu: {e}")
-        return "Üzgünüm, bir hata oluştu."
+    recognizer = sr.Recognizer()
+    microphone = sr.Microphone()
+
+    while True:
+        print("Tarifi almak için lütfen komut verin... (ör. 'makarna nasıl yapılır')")
+        tts = gTTS(text="Tarifi almak için lütfen komut verin.", lang="tr", slow=False)
+        tts.save(output_path)
+        play_audio(output_path)
+
+        with microphone as source:
+            recognizer.adjust_for_ambient_noise(source)
+            audio = recognizer.listen(source)
+
+        try:
+            query = recognizer.recognize_google(audio, language='tr').lower()
+            print(f"Algılanan tarif: {query}")
+
+            steps = process_user_question(query)
+
+            if not steps or not isinstance(steps, str): 
+                print("Tarif bulunamadı veya bir hata oluştu.")
+                continue
+
+            steps = [step.strip().replace("*", "") for step in steps.split("\n") if step.strip()] 
+
+            print("\nTarif adımları:")
+            step_index = 0
+            while step_index < len(steps):
+                print(f"Adım {step_index + 1}: {steps[step_index]}")
+                tts = gTTS(text=steps[step_index], lang="tr", slow=False)
+                tts.save(output_path)
+                play_audio(output_path)
+
+                print("Devam etmek için 'devam et' veya 'çıkış' söyleyin.")
+                tts = gTTS(text="Devam etmek için 'devam et' veya 'çıkış' söyleyin.", lang="tr", slow=False)
+                tts.save(output_path)
+                play_audio(output_path)
+
+                with microphone as source:
+                    recognizer.adjust_for_ambient_noise(source)
+                    audio = recognizer.listen(source)
+
+                try:
+                    user_input = recognizer.recognize_google(audio, language='tr').lower()
+                    print(f"Algılanan komut: {user_input}")
+
+                    if user_input == "devam et":
+                        step_index += 1
+                    elif user_input == "çıkış":
+                        print("Görüşmek üzere!")
+                        subprocess.Popen([sys.executable] + sys.argv)
+                        sys.exit()  
+                        return
+                    else:
+                        print("Geçersiz komut, lütfen 'devam et' veya 'çıkış' yazın.")
+                
+                except sr.UnknownValueError:
+                    print("Komut anlaşılmadı, lütfen tekrar edin.")
+                except sr.RequestError as e:
+                    print(f"Google API hizmetine erişilemiyor: {e}")
+        
+        except sr.UnknownValueError:
+            print("Tarif anlayamadım, lütfen tekrar edin.")
+        except sr.RequestError as e:
+            print(f"Google API hizmetine erişilemiyor: {e}")
+
 
 
 
@@ -169,7 +250,7 @@ def handle_volume_commands(user_command):
             vol_write(vol)
             update_volume(vol)
             text = f"Müzik sesi % {vol}'a düşürüldü."
-    elif "aç" in user_command: 
+    elif "videosunu aç" in user_command: 
         song_name = user_command.replace("aç", "").strip() 
         text = f"{song_name} adlı şarkıyı açıyorum"
         pywhatkit.playonyt(song_name) 
@@ -213,7 +294,7 @@ def assistant_listen_and_execute(keyword="hey kılıç", language='tr'):
                             else:
                                 text = process_user_question(user_command)
 
-                            if "resim oluştur" in user_command:
+                            if "resim modunu aç" in user_command:
                                 print("Nasıl bir şekilde resim oluşturmak istersiniz?")
                                 recognizer.adjust_for_ambient_noise(source)
                                 audio = recognizer.listen(source)
@@ -231,8 +312,26 @@ def assistant_listen_and_execute(keyword="hey kılıç", language='tr'):
                                 except sr.RequestError as e:
                                     print(f"Google API hizmetine erişilemiyor: {e}")
                             
+                            elif "tarif modunu aç" in user_command:
+                                print("Nasıl bir şekilde tarif oluşturmak istersiniz?")
+                                recognizer.adjust_for_ambient_noise(source)
+                                audio = recognizer.listen(source)
+                                
+                                try:
+                                    recipe_for_food()
+                                except sr.UnknownValueError:
+                                    print("Resim açıklamasını anlayamadım, lütfen tekrar edin.")
+                                except sr.RequestError as e:
+                                    print(f"Google API hizmetine erişilemiyor: {e}")
 
-
+                            # audio = client.generate(
+                            #     text=text,
+                            #     voice=Voice(
+                            #         voice_id=choose_voice_id,
+                            #         settings=VoiceSettings(stability=0.71, similarity_boost=0.5, style=0.0, use_speaker_boost=True)
+                            #     )
+                            # )
+                            # play(audio)
 
                             tts = gTTS(text=text, lang=language, slow=False)
                             tts.save(output_path)
