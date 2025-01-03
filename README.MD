@@ -6,7 +6,7 @@ Kullanıcı için ui ve ux tasarlanacak:
 
 -> Kullanıcı favori şarkıları için bu şarkıyı favoriye kaydet diyecek
 -> ui üzerinden alınan input verisi ile kullanıcın isimlendirdiği playlisti sesli olarak oynatacak
-
+-> Kullanıcı aktivitelerini belirleme
 
 
 
@@ -35,6 +35,7 @@ Oyun modları eklenecek
 -Temel matematik 
 -Yapay Zeka sesi değiştirildi
 -Yemek tarifi verebiliyor devam et diyince devam eder 
+-Yapay zeka ile fotograf oluşturma
 
 # Ui Added
 -Ui üzerinden Gemini için hangi modeli kullanıcağını seçebiliyor

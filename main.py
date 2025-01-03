@@ -324,14 +324,14 @@ def assistant_listen_and_execute(keyword="hey kılıç", language='tr'):
                                 except sr.RequestError as e:
                                     print(f"Google API hizmetine erişilemiyor: {e}")
 
-                            # audio = client.generate(
-                            #     text=text,
-                            #     voice=Voice(
-                            #         voice_id=choose_voice_id,
-                            #         settings=VoiceSettings(stability=0.71, similarity_boost=0.5, style=0.0, use_speaker_boost=True)
-                            #     )
-                            # )
-                            # play(audio)
+                            audio = client.generate(
+                                text=text,
+                                voice=Voice(
+                                    voice_id=choose_voice_id,
+                                    settings=VoiceSettings(stability=0.71, similarity_boost=0.5, style=0.0, use_speaker_boost=True)
+                                )
+                            )
+                            play(audio)
 
                             tts = gTTS(text=text, lang=language, slow=False)
                             tts.save(output_path)
